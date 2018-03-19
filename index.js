@@ -1,4 +1,4 @@
-const Config = require('config.json');
+const Config = require('./config.json');
 
 const Discord = require('discord.js');
 const Client = new Discord.Client();
