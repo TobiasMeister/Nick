@@ -3,6 +3,8 @@ const Config = require('./config.json');
 const Discord = require('discord.js');
 const Client = new Discord.Client();
 
+const escapeStringRegexp = require('escape-string-regexp');
+
 function randomBetween(min, max) {
 	return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -36,6 +38,19 @@ Client.on('guildMemberRemove', member => {
 	if (newMembers.get(guild.id).has(member.id)) {
 		newMembers.get(guild.id).delete(member.id);
 	}
+});
+
+Client.on('userUpdate', (oldUser, newUser) => {
+	Client.guilds.forEach(async (guild, id) => {
+		const member = await guild.fetchMember(newUser);
+		if (!member) return;
+		if (!member.nickname) return;
+		if (!member.nickname.endsWith(' | ' + member.nickname)) return;
+
+		let name = member.nickname.replace(
+				new RegExp(' | ' + escapeStringRegexp(oldUser.username) + '$', ''));
+		member.setNickname(name + ' | ' + newUser.username);
+	});
 });
 
 const approving = [
