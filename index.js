@@ -45,7 +45,7 @@ Client.on('userUpdate', (oldUser, newUser) => {
 		const member = await guild.fetchMember(newUser);
 		if (!member) return;
 		if (!member.nickname) return;
-		if (!member.nickname.endsWith(' | ' + member.nickname)) return;
+		if (!member.nickname.endsWith(' | ' + oldUser.username)) return;
 
 		let name = member.nickname.replace(
 				new RegExp(' | ' + escapeStringRegexp(oldUser.username) + '$', ''));
@@ -95,12 +95,12 @@ Client.on('message', async (msg) => {
 			if (isNewUser) {
 				msg.channel.send(randomEntry(approving) + ` Welcome to the server, ${name} :smile:`);
 			} else {
-				msg.channel.send(randomEntry(countering) + ' still a shit name, tho ' + Client.emojis.find('425405967036055553'));
+				msg.channel.send(randomEntry(countering) + ' still a shit name, tho :sweat_drops:');
 			}
 		}
 
 	} catch (error) {
-		msg.channel.send(`[Error] Couldn't process command ${msg.content} | see console`);
+		msg.channel.send(`[Error] Couldn't process command \`${msg.content}\` | see console`);
 		console.error(error);
 	} finally {
 		newMembers.get(guild.id).delete(member.id);
