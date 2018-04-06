@@ -91,9 +91,16 @@ Client.on('message', async (msg) => {
 					? cmd + ' ' + args.join(' ')
 					: args.join(' ');
 
-			await member.setNickname(name + ' | ' + msg.author.username);
+			if (name) {
+				await member.setNickname(name + ' | ' + msg.author.username);
+			} else {
+				await member.setNickname(msg.author.username);
+			}
+
 			if (isNewUser) {
 				msg.channel.send(randomEntry(approving) + ` Welcome to the server, ${name} :smile:`);
+			} else if (!name) {
+				msg.channel.send("Dear Entity, I've successfully restored your nickname. :no_mouth: Regards");
 			} else {
 				msg.channel.send(randomEntry(countering) + ' still a shit name, tho :sweat_drops:');
 			}
