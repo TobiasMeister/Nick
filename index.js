@@ -74,6 +74,8 @@ function randomEntry(array) {
 
 Client.on('message', async (msg) => {
 	if (msg.author === Client.user) return;
+	// Filter only text messages, ignore welcome or pin messages
+	if (!(msg.type === Discord.Constants.MessageTypes[0])) return;
 	if (!(msg.channel instanceof Discord.TextChannel)) return;
 
 	const parts = msg.content.split(' ');
