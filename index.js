@@ -9,14 +9,15 @@ function randomBetween(min, max) {
 	return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+// Hierarchy: Guilds > Members > Text Channel
 let newMembers = new Map();
 
 Client.on('ready', () => {
-	Client.guilds.forEach((guild, id) => newMembers.set(id, new Set()));
+	Client.guilds.forEach((guild, id) => newMembers.set(id, new Map()));
 });
 
 Client.on('guildCreate', guild => {
-	newMembers.set(guild.id, new Set());
+	newMembers.set(guild.id, new Map());
 });
 
 Client.on('guildDelete', guild => {
@@ -26,9 +27,9 @@ Client.on('guildDelete', guild => {
 Client.on('guildMemberAdd', member => {
 	let guild = member.guild;
 
-	newMembers.get(guild.id).add(member.id);
-
 	let channel = guild.channels.find('name', 'general');
+	newMembers.get(guild.id).set(member.id, channel.id);
+
 	channel.send(`Hi <@${member.id}>, what's your name?`);
 });
 
@@ -72,6 +73,18 @@ function randomEntry(array) {
 	return array[randomBetween(0, array.length - 1)];
 }
 
+function filterName(name) {
+	return name.replace(/<:.+?:\d+?>/g, '')
+			.replace(/\s{2,}/g, ' ');
+}
+
+async function setNickname(member, nickname, textChannel) {
+	if (nickname.length > 32) return textChannel.send(`Sry, but \`${name}\` is too long :sleepy: Try something shorter`);
+
+	await member.setNickname(nickname);
+	newMembers.get(member.guild.id).delete(member.id);
+}
+
 Client.on('message', async (msg) => {
 	if (msg.author === Client.user) return;
 	// Filter only text messages, ignore welcome or pin messages
@@ -88,31 +101,32 @@ Client.on('message', async (msg) => {
 	try {
 		let isNewUser = newMembers.get(guild.id).has(member.id);
 
-		if (cmd === '--nick' || isNewUser) {
-			let name = isNewUser
-					? cmd + ' ' + args.join(' ')
-					: args.join(' ');
+		if (isNewUser) {
+			if (newMembers.get(guild.id).get(member.id) !== msg.channel.id) return;
+
+			let name = filterName(cmd + ' ' + args.join(' '));
+
+			if (!name || name.match(/^\s+$/)) return;
+
+			setNickname(member, name + ' | ' + msg.author.username, msg.channel);
+			msg.channel.send(randomEntry(approving) + ` Welcome to the server, ${name} :smile:`);
+
+		} else if (cmd === '--nick') {
+			let name = filterName(args.join(' '));
 
 			if (name) {
-				await member.setNickname(name + ' | ' + msg.author.username);
+				setNickname(member, name + ' | ' + msg.author.username, msg.channel);
+				msg.channel.send(randomEntry(countering) + ' still a shit name, tho :sweat_drops:');
+
 			} else {
 				await member.setNickname(msg.author.username);
-			}
-
-			if (isNewUser) {
-				msg.channel.send(randomEntry(approving) + ` Welcome to the server, ${name} :smile:`);
-			} else if (!name) {
 				msg.channel.send("Dear Entity, I've successfully restored your nickname. :no_mouth: Regards");
-			} else {
-				msg.channel.send(randomEntry(countering) + ' still a shit name, tho :sweat_drops:');
 			}
 		}
 
 	} catch (error) {
 		msg.channel.send(`[Error] Couldn't process command \`${msg.content}\` | see console`);
 		console.error(error);
-	} finally {
-		newMembers.get(guild.id).delete(member.id);
 	}
 });
 
