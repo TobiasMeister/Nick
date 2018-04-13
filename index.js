@@ -78,11 +78,11 @@ function filterName(name) {
 			.replace(/\s{2,}/g, ' ');
 }
 
-async function setNickname(member, nickname, textChannel) {
-	if (nickname.length > 32) return textChannel.send(`Sry, but \`${name}\` is too long :sleepy: Try something shorter`);
+function setNickname(member, nickname) {
+	let fullName = nickname + ' | ' + member.user.username;
+	if (fullName.length > 32) return Promise.reject(`Sry, but \`${nickname}\` is too long :sleepy: Try something shorter`);
 
-	await member.setNickname(nickname);
-	newMembers.get(member.guild.id).delete(member.id);
+	return member.setNickname(fullName);
 }
 
 Client.on('message', async (msg) => {
@@ -108,15 +108,20 @@ Client.on('message', async (msg) => {
 
 			if (!name || name.match(/^\s+$/)) return;
 
-			setNickname(member, name + ' | ' + msg.author.username, msg.channel);
-			msg.channel.send(randomEntry(approving) + ` Welcome to the server, ${name} :smile:`);
+			setNickname(member, name)
+					.then(member => {
+						newMembers.get(member.guild.id).delete(member.id);
+						msg.channel.send(randomEntry(approving) + ` Welcome to the server, ${name} :smile:`);
+					})
+					.catch(error => msg.channel.send(error));
 
 		} else if (cmd === '--nick') {
 			let name = filterName(args.join(' '));
 
 			if (name) {
-				setNickname(member, name + ' | ' + msg.author.username, msg.channel);
-				msg.channel.send(randomEntry(countering) + ' still a shit name, tho :sweat_drops:');
+				setNickname(member, name)
+						.then(member => msg.channel.send(randomEntry(countering) + ' still a shit name, tho :sweat_drops:'))
+						.catch(error => msg.channel.send(error));
 
 			} else {
 				await member.setNickname(msg.author.username);
