@@ -42,15 +42,23 @@ Client.on('guildMemberRemove', member => {
 });
 
 Client.on('userUpdate', (oldUser, newUser) => {
+	if (oldUser.nickname === newUser.nickname) return;
+
 	Client.guilds.forEach(async (guild, id) => {
 		const member = await guild.fetchMember(newUser);
-		if (!member) return;
-		if (!member.nickname) return;
+		if (!member || !member.nickname) return;
 		if (!member.nickname.endsWith(' | ' + oldUser.username)) return;
 
-		let name = member.nickname.replace(
-				new RegExp(' | ' + escapeStringRegexp(oldUser.username) + '$', ''));
-		member.setNickname(name + ' | ' + newUser.username);
+		let previousNickname = member.nickname;
+		let name = previousNickname.replace(
+				new RegExp(escapeStringRegexp(' | ' + oldUser.username) + '$', ''));
+		let newNickname = name + ' | ' + newUser.username;
+
+		member.setNickname(newNickname)
+				.then(member => console.log(
+					`Automatically changed nickname from '${previousNickname}' to '${newNickname}'`))
+				.catch(error => console.error(
+					`Error while automatically changing nickname from '${previousNickname}' to '${newNickname}':`, error));
 	});
 });
 
@@ -80,7 +88,8 @@ function filterName(name) {
 
 function setNickname(member, nickname) {
 	let fullName = nickname + ' | ' + member.user.username;
-	if (fullName.length > 32) return Promise.reject(`Sry, but \`${nickname}\` is too long :sleepy: Try something shorter`);
+	if (fullName.length > 32) return Promise.reject(
+			`Sry, but \`${nickname}\` is too long :sleepy: Try something shorter`);
 
 	return member.setNickname(fullName);
 }
@@ -111,7 +120,8 @@ Client.on('message', async (msg) => {
 			setNickname(member, name)
 					.then(member => {
 						newMembers.get(member.guild.id).delete(member.id);
-						msg.channel.send(randomEntry(approving) + ` Welcome to the server, ${name} :smile:`);
+						msg.channel.send(randomEntry(approving)
+								+ ` Welcome to the server, ${name} :smile:`);
 					})
 					.catch(error => msg.channel.send(error));
 
@@ -120,7 +130,8 @@ Client.on('message', async (msg) => {
 
 			if (name) {
 				setNickname(member, name)
-						.then(member => msg.channel.send(randomEntry(countering) + ' still a shit name, tho :sweat_drops:'))
+						.then(member => msg.channel.send(randomEntry(countering)
+								+ ' still a shit name, tho :sweat_drops:'))
 						.catch(error => msg.channel.send(error));
 
 			} else {
@@ -131,7 +142,7 @@ Client.on('message', async (msg) => {
 
 	} catch (error) {
 		msg.channel.send(`[Error] Couldn't process command \`${msg.content}\` | see console`);
-		console.error(error);
+		console.error('Error while changing nickname ' + (isNewUser ? 'for new user' : 'via command') + ':', error);
 	}
 });
 
